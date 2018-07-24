@@ -1,0 +1,33 @@
+{{- /* vim: set filetype=mustache: */ -}}
+{{- $values := datasource "values" -}}
+{{- $app := datasource "app" | strings.TrimSpace -}}
+---
+{{- `
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-` -}}{{- $app -}}{{- `" (template "` -}}{{- $values.chartName -}}{{- `.fullname" .) }}
+  labels:
+{{ include "` -}}{{ $values.chartName }}{{- `.labels.standard" . | indent 4 }}
+{{- if .Values.` -}}{{- $app -}}{{- `.service.annotations }}
+  annotations:
+{{ toYaml .Values.` -}}{{- $app -}}{{- `.service.annotations | indent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.` -}}{{- $app -}}{{- `.service.type }}` -}}
+{{- range $key, $value := (index $values.applications $app).deployment.ports -}}
+{{- `
+  ports:
+  - port: {{ .Values.` -}}{{- $app -}}{{- `.service.externalPort | default ` -}}{{- $value.port -}}{{- ` }}
+{{- if (and (eq .Values.` -}}{{- $app -}}{{- `.service.type "NodePort") (not (empty .Values.` -}}{{- $app -}}{{- `.service.nodePort))) }}
+    nodePort: {{ .Values.` -}}{{- $app -}}{{- `.service.nodePort }}
+{{- else }}
+    targetPort: ` -}}{{- $key | strings.ToLower -}}{{- `
+{{- end }}
+    protocol: ` -}}{{- $value.protocol | default "TCP" -}}{{- `
+    name: ` -}}{{- $key | strings.ToLower -}}
+  {{- end -}}{{- `
+  selector:
+    app: {{ printf "%s-` -}}{{- $app -}}{{- `" (template "` -}}{{- $values.chartName -}}{{- `.name" .) }}
+    release: {{ .Release.Name }}
+` -}}

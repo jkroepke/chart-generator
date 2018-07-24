@@ -1,0 +1,7 @@
+{{- /* vim: set filetype=mustache: */ -}}
+{{- $values := datasource "values" -}}
+---
+{{- if (has $values "chartDependencies") }}
+dependencies:
+{{ $values.chartDependencies | toYAML -}}
+{{- end }}

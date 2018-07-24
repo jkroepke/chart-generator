@@ -1,0 +1,34 @@
+{{- /* vim: set filetype=mustache: */ -}}
+{{- $values := datasource "values" -}}
+---
+{{- if (has $values "chartApiVersion") }}
+apiVersion: {{ $values.chartApiVersion }}
+{{- else }}
+apiVersion: v1
+{{- end }}
+name: {{ $values.chartName }}
+{{- if (has $values "chartDescription") }}
+description: {{ $values.chartDescription }}
+{{- end }}
+version: {{ (ds "values").chartVersion }}
+{{- if (has $values "chartAppVersion") }}
+appVersion: {{ $values.chartAppVersion }}
+{{- end }}
+{{- if (has $values "chartHome") }}
+home: {{ $values.chartHome }}
+{{- end }}
+{{- if (has $values "chartIcon") }}
+icon: {{ $values.chartIcon }}
+{{- end }}
+{{- if (has $values "chartKeywords") }}
+keywords:
+{{ $values.chartKeywords | data.ToYAML -}}
+{{- end }}
+{{- if (has $values "chartSources") }}
+sources:
+{{ $values.chartSources | data.ToYAML -}}
+{{- end }}
+{{- if (has $values "chartMaintainers") }}
+maintainers:
+{{ $values.chartMaintainers | data.ToYAML -}}
+{{- end }}
