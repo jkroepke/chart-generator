@@ -1,0 +1,110 @@
+{{- /* vim: set filetype=mustache: */ -}}
+{{- $values := datasource "values" -}}
+{{- $appName := datasource "app" | strings.TrimSpace -}}
+{{- $app := (index $values.applications $appName) -}}
+---
+{{- `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: ` -}}{{- $appName -}}{{- `
+{{ include "` -}}{{ $values.chartName }}{{- `.labels.standard" . | indent 4 }}
+{{- if .Values.` -}}{{- $appName -}}{{- `.annotations }}
+  annotations:
+{{ toYaml .Values.` -}}{{- $appName -}}{{- `.annotations | indent 4 }}
+{{- else }}
+{{- if .Values.` -}}{{- $appName -}}{{- `.imageStream }}
+  annotations:
+{{- end }}
+{{- end }}
+{{- if .Values.` -}}{{- $appName -}}{{- `.imageStream }}
+    image.openshift.io/triggers: |
+      [{
+        "from": {
+          "kind":"ImageStreamTag",
+          "name":"{{ .Values.` -}}{{- $appName -}}{{- `.image.repository }}:{{ .Values.` -}}{{- $appName -}}{{- `.image.tag }}"
+        },
+        "fieldPath":"spec.template.spec.containers[?(@.name==\"` -}}{{- $appName -}}{{- `\")].image"
+      }]
+{{- end }}
+  name: {{ template "` -}}{{- $values.chartName -}}{{- `.fullname" . }}-` -}}{{- $appName -}}{{- `
+spec:
+  strategy:
+{{ toYaml .Values.` -}}{{- $appName -}}{{- `.strategy | indent 4 }}
+  replicas: {{ .Values.` -}}{{- $appName -}}{{- `.replicaCount | default 1 }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+{{ include "` -}}{{- $values.chartName -}}{{- `.matchLabels" . | indent 6 }}
+      component: ` -}}{{- $appName -}}{{- `
+  template:
+    metadata:
+    {{- if .Values.` -}}{{- $appName -}}{{- `.podAnnotations }}
+      annotations:
+{{ toYaml .Values.` -}}{{- $appName -}}{{- `.podAnnotations | indent 8 }}
+    {{- end }}
+      labels:
+{{ include "` -}}{{- $values.chartName -}}{{- `.matchLabels" . | indent 8 }}
+        component: ` -}}{{- $appName -}}{{- `
+    spec:
+      {{- if .Values.` -}}{{- $appName -}}{{- `.affinity }}
+      affinity:
+{{ toYaml .Values.` -}}{{- $appName -}}{{- `.affinity | indent 8 }}
+      {{- end }}
+      {{- if .Values.` -}}{{- $appName -}}{{- `.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.` -}}{{- $appName -}}{{- `.nodeSelector | indent 8 }}
+      {{- end }}
+      {{- if .Values.` -}}{{- $appName -}}{{- `.tolerations }}
+      tolerations:
+{{ toYaml .Values.` -}}{{- $appName -}}{{- `.tolerations | indent 8 }}
+      {{- end }}
+      {{- if .Values.` -}}{{- $appName -}}{{- `.schedulerName }}
+      schedulerName: "{{ .Values.` -}}{{- $appName -}}{{- `.schedulerName }}"
+      {{- end }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+      {{- end }}
+      volumes:
+        - emptyDir: {}
+          name: queue
+      containers:
+        - env:
+          image: {{ include "` -}}{{- $values.chartName -}}{{- `.image" .Values.` -}}{{- $appName -}}{{- ` }}
+          imagePullPolicy: {{ default "" .Values.` -}}{{- $appName -}}{{- `.image.pullPolicy | quote }}
+          livenessProbe:
+            exec:
+              command:
+                - /healthcheck.sh
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          name: ` -}}{{- $appName -}}{{- `
+          ports:
+            - containerPort: 25
+              name: smtp
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - /healthcheck.sh
+            failureThreshold: 3
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 100m
+              memory: 150Mi
+            requests:
+              cpu: 10m
+              memory: 50Mi
+          volumeMounts:
+            - mountPath: /var/spool/mqueue/
+              name: queue
+` }}

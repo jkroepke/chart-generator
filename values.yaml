@@ -17,10 +17,10 @@ chartDependencies:
 
 applications:
   mailout:
-    deployment:
-      image: a
-      ports:
-        SMTP:
-          port: 25
-          protocol: TCP
-    pvc:
+    kind: deployment
+    image: a
+    ports:
+      SMTP:
+        port: 25
+        protocol: TCP
+    pvc: {}
